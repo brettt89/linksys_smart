@@ -111,7 +111,7 @@ class LinksysSmartWifiDeviceScanner(DeviceScanner):
         data = [
             {
                 "request": {"sinceRevision": 0},
-                "action": "http://linksys.com/jnap/devicelist/GetDevices",
+                "action": "http://linksys.com/jnap/devicelist/GetDevices3",
             }
         ]
         headers = {
