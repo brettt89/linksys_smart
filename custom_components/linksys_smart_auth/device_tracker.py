@@ -50,7 +50,7 @@ class LinksysSmartWifiDeviceScanner(DeviceScanner):
         self.last_results = {}
 
         # Check if the access point is accessible
-        response = self._make_request()
+        response = self._get_router()
         if response.status_code != HTTPStatus.OK:
             raise ConnectionError("Cannot connect to Linksys Access Point")
 
@@ -139,6 +139,24 @@ class LinksysSmartWifiDeviceScanner(DeviceScanner):
             {
                 "request": {"sinceRevision": 0},
                 "action": "http://linksys.com/jnap/devicelist/GetDevices3",
+            }
+        ]
+        headers = {
+            "X-JNAP-Action": "http://linksys.com/jnap/core/Transaction",
+            "X-JNAP-Authorization": self._get_auth()
+        }
+        return requests.post(
+            f"http://{self.host}/JNAP/",
+            timeout=DEFAULT_TIMEOUT,
+            headers=headers,
+            json=data,
+        )
+
+    def _get_router(self):
+        data = [
+            {
+                "request": {},
+                "action": "http://linksys.com/jnap/core/GetDeviceInfo",
             }
         ]
         headers = {
