@@ -2,12 +2,10 @@
 
 from homeassistant.core import HomeAssistant
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-async def async_setup_entry(
-    hass: HomeAssistant, config: ConfigEntry, async_add_entities: AddEntitiesCallback
-) -> None:
+async def async_setup(hass: HomeAssistant, config: ConfigEntry):
     """Add the entities."""
+    test = "test"
     # device_trackers: List[LinksysVelopMeshDeviceTracker] = [
     #     LinksysVelopMeshDeviceTracker(
     #         config_entry=config,
