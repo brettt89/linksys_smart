@@ -1,7 +1,8 @@
 """UI for configuring the integration."""
 
 import base64
-import requests
+import aiohttp
+import asyncio
 import voluptuous as vol
 
 from homeassistant import config_entries
@@ -16,7 +17,7 @@ class LinksysWifiConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_user(self, user_input=None):
         if user_input is not None:
             # Validate user input
-            valid = await self.is_valid(user_input)
+            valid = await asyncio.run(self.is_valid(user_input))
             if valid:
                 # Store the data
                 return self.async_create_entry(
@@ -35,14 +36,15 @@ class LinksysWifiConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             vol.Required("password"): str,
         }
 
-        return self.async_show_form(\
-            step_id="init", data_schema=vol.Schema(data_schema), errors=self.errors
+        return self.async_show_form(
+            step_id="user", data_schema=vol.Schema(data_schema), errors=self.errors
         )
     
     async def is_valid(self, user_input):
         # create the login hash
         username = user_input["username"]
         password = user_input["password"]
+        host = user_input["host"]
         credentials = f"{username}:{password}"
         encoded_credentials = base64.b64encode(credentials.encode()).decode()
         auth_string = f"Basic {encoded_credentials}"
@@ -59,22 +61,23 @@ class LinksysWifiConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             "X-JNAP-Authorization": auth_string
         }
         try:
-            response = requests.post(
-                f"http://{user_input.host}/JNAP/",
-                timeout=10,
-                headers=headers,
-                json=data,
-            )
-        except requests.exceptions.ConnectionError:
-            self.errors["base"] = "connection_error"
-            return False
-        except requests.exceptions.Timeout:
+            async with aiohttp.ClientSession() as session:
+                response = await session.post(
+                    f"http://{host}/JNAP/",
+                    timeout=10,
+                    headers=headers,
+                    data=data,
+                )
+        except aiohttp.ServerTimeoutError:
             self.errors["base"] = "timeout"
             return False
-        except requests.exceptions.HTTPError:
+        except aiohttp.ClientConnectionError:
+            self.errors["base"] = "connection_error"
+            return False
+        except aiohttp.ClientResponseError:
             self.errors["base"] = "http_error"
             return False
-        except requests.exceptions.RequestException:
+        except aiohttp.ClientError:
             self.errors["base"] = "unexpected"
             return False
 
