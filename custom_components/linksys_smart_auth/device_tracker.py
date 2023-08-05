@@ -5,7 +5,7 @@ from http import HTTPStatus
 import logging
 import base64
 
-from .device import Device
+from . import Device
 
 import requests
 import voluptuous as vol
