@@ -5,6 +5,8 @@ from http import HTTPStatus
 import logging
 import base64
 
+from device import Device
+
 import requests
 import voluptuous as vol
 
@@ -69,7 +71,8 @@ class LinksysSmartWifiDeviceScanner(DeviceScanner):
         _LOGGER.info("Checking Linksys Smart Wifi")
 
         self.last_results = {}
-        response = self._make_request()
+        online = []
+        response = self._get_network_connections()
         if response.status_code != HTTPStatus.OK:
             _LOGGER.error(
                 "Got HTTP status code %d when getting device list", response.status_code
@@ -78,40 +81,62 @@ class LinksysSmartWifiDeviceScanner(DeviceScanner):
         try:
             data = response.json()
             result = data["responses"][0]
-            devices = result["output"]["devices"]
-            for device in devices:
-                interfaces = device['knownInterfaces']
-                macs = []
-                for interface in interfaces:
-                    if not (mac := interface["macAddress"]):
-                        _LOGGER.warning("Skipping interface without known MAC address")
-                        continue
-                    macs.append(mac)
-                mac = macs[-1]
-                if not device["connections"]:
-                    _LOGGER.debug("Device %s is not connected", mac)
+            for connection in result["output"]["connections"]:
+                online[connection["macAddress"]] = connection
+        except (KeyError, IndexError):
+            _LOGGER.exception("Router returned unexpected response")
+            return False
+
+        response = self._get_devices()
+        if response.status_code != HTTPStatus.OK:
+            _LOGGER.error(
+                "Got HTTP status code %d when getting device list", response.status_code
+            )
+            return False
+        try:
+            data = response.json()
+            result = data["responses"][0]
+            for data in result["output"]["devices"]:
+                device = Device(data)
+                if not (device.mac_address in online):
+                    device.set_online(False)
+                    _LOGGER.debug("Device %s is not connected", device.mac_address)
                     continue
 
-                name = None
-                for prop in device["properties"]:
-                    if prop["name"] == "userDeviceName":
-                        name = prop["value"]
-                if not name:
-                    name = device.get("friendlyName", device["deviceID"])
-
-                _LOGGER.debug("Device %s is connected", mac)
-                self.last_results[mac] = name
+                device.set_connection(online[device.mac_address])
+                _LOGGER.debug("Device %s is connected", device.mac_address)
+                
+                self.last_results[device.mac_address] = device.name
         except (KeyError, IndexError):
             _LOGGER.exception("Router returned unexpected response")
             return False
         return True
 
-    def _make_request(self):
+    def _get_auth(self):
         # create the login hash
         credentials = f"{self.username}:{self.password}"
         encoded_credentials = base64.b64encode(credentials.encode()).decode()
-        authorization_header = f"Basic {encoded_credentials}"
+        return f"Basic {encoded_credentials}"
 
+    def _get_network_connections(self):
+        data = [
+            {
+                "request": {},
+                "action": "http://linksys.com/jnap/networkconnections/GetNetworkConnections",
+            }
+        ]
+        headers = {
+            "X-JNAP-Action": "http://linksys.com/jnap/core/Transaction",
+            "X-JNAP-Authorization": self._get_auth()
+        }
+        return requests.post(
+            f"http://{self.host}/JNAP/",
+            timeout=DEFAULT_TIMEOUT,
+            headers=headers,
+            json=data,
+        )
+
+    def _get_devices(self):
         data = [
             {
                 "request": {"sinceRevision": 0},
@@ -120,7 +145,7 @@ class LinksysSmartWifiDeviceScanner(DeviceScanner):
         ]
         headers = {
             "X-JNAP-Action": "http://linksys.com/jnap/core/Transaction",
-            "X-JNAP-Authorization": authorization_header
+            "X-JNAP-Authorization": self._get_auth()
         }
         return requests.post(
             f"http://{self.host}/JNAP/",
