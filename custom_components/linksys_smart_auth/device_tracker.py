@@ -69,7 +69,7 @@ class LinksysSmartWifiDeviceScanner(DeviceScanner):
         _LOGGER.info("Checking Linksys Smart Wifi")
 
         self.last_results = {}
-        online = []
+        online = {}
         response = self._get_network_connections()
         if response.status_code != HTTPStatus.OK:
             _LOGGER.error(
