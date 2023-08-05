@@ -1,4 +1,24 @@
 """Support for Linksys Smart Wifi routers using auth."""
+
+from homeassistant.core import HomeAssistant
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.helpers.entity_platform import AddEntitiesCallback
+
+async def async_setup_entry(
+    hass: HomeAssistant, config: ConfigEntry, async_add_entities: AddEntitiesCallback
+) -> None:
+    """Add the entities."""
+    # device_trackers: List[LinksysVelopMeshDeviceTracker] = [
+    #     LinksysVelopMeshDeviceTracker(
+    #         config_entry=config,
+    #         device_id=tracker,
+    #         hass=hass,
+    #     )
+    #     for tracker in config.options.get(CONF_DEVICE_TRACKERS, [])
+    # ]
+
+    # async_add_entities(device_trackers)
+
 # from __future__ import annotations
 
 # from http import HTTPStatus
