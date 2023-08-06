@@ -49,16 +49,19 @@ class LinksysController:
         self.headers[LOCAL_JNAP_ACTION_HEADER] = LOCAL_JNAP_ACTION_TRANSACTION
         self.headers[LOCAL_JNAP_AUTHORIZATION_HEADER] = auth_string
 
-        responses = await self.async_get_device_info()
+        device_info = await self.async_get_device_info()
 
-        self.device_info = responses[0]
-        self.services = responses[0].get("services", [])
+        self.device_info = device_info
+        self.services = device_info.get("services", [])
 
 
     async def async_get_device_info(self) -> list[dict]:
         """Load Linksys Smart Wifi devices"""
 
         responses = await self.request("core/GetDeviceInfo")
+        output = responses[0]['output']
+
+        return output
 
     async def async_get_devices(self) -> list[dict]:
         """Load Linksys Smart Wifi devices"""

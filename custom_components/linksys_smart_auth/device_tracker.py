@@ -8,7 +8,7 @@ from homeassistant.core import Event as HomeAssistant
 from homeassistant.helpers.entity import EntityDescription
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .linksys import Linksys, LinksysConfig
+from .linksys import Linksys, LinksysConfig, Device
 from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
@@ -56,29 +56,17 @@ class LinksysScannerEntity(ScannerEntity):
     def __init__(
         self,
         hass: HomeAssistant,
-        device: dict,
+        device: Device,
         connections: list,
     ) -> None:
         self.hass = hass
         self._device = device
-        self._mac_address = device.get("mac", None)
+        self._mac_address = device.get("mac_address", None)
 
-        self._id = device.get("device_id")
-        self._name = device.get('friendlyName', self._id)
-
-        self._get_device_adapter_info()
-
-    def _get_device_adapter_info(self) -> None:
-        self._interfaces: list[dict] = [a for a in self._device.get("knownInterfaces")]
-        if self._interfaces:
-            self._mac = self._interfaces[0].get("macAddress", "")
-
-        self._connections: list[dict] = [a for a in self._device.get("connections")]
-        if self._connections:
-            self._ip = self._connections[0].get("ip", "")
+        self._id = device.get("id")
+        self._name = device.get('name', self._id)
+        self._connections = device.get('connections')
 
     def is_connected(self) -> bool:
-        if self._mac_address in self._connections:
-            return True
-        return False
+        return self._device.is_online()
         

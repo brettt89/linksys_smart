@@ -61,8 +61,8 @@ class Linksys:
     def __init__(self, hass: HomeAssistant, config: LinksysConfig) -> None:
         self.hass = hass
         self.config = config
-        self.devices = []
-        self.connections = []
+        self.devices = {}
+        self.connections = {}
 
     async def async_initialize(self):
         session = async_get_clientsession(self.hass)
@@ -74,16 +74,9 @@ class Linksys:
 
     async def async_get_devices(self):
         devices = await self._controller.async_get_devices()
-        for device in devices:
-            if len(interface := device["knownInterfaces"]) != 1:
-                continue
-
-            if not ("macAddress" in interface[0]):
-                continue
-
-            mac = interface[0]["macAddress"]
-            self.devices[mac] = device
-            self.devices[mac]["mac"] = mac
+        for data in devices:
+            device = Device(data)
+            self.devices[device.mac] = device
 
     async def async_get_network_connections(self):
         connections = await self._controller.async_get_network_connections()
@@ -91,4 +84,34 @@ class Linksys:
             mac = connection["macAddress"]
             self.connections[mac] = connection
 
+            if mac in self.devices:
+                device: Device = self.devices[mac]
+                device.seen()
+
         
+class Device:
+    def __init__(self, config):
+        self.id = config.get("deviceID")
+        self.name = config.get("friendlyName", "Unknown")
+        self.interfaces = config.get("knownInterfaces", [])
+        self.connections = config.get("connections", [])
+        self.online = False
+
+        if len(self.interfaces) == 1:
+            if "macAddress" in self.interfaces[0]:
+                self.mac_address = self.interfaces[0].get("macAddress")
+
+        if len(self.connections) == 1:
+            if "ipAddress" in self.connections[0]:
+                self.ip_address = self.connections[0].get("ipAddress")
+            if "ipv6Address" in self.connections[0]:
+                self.ipv6_address = self.connections[0].get("ipv6Address")
+
+    def is_online(self):
+        return self.online
+
+    def seen(self):
+        self.online = True
+
+    def unseen(self):
+        self.online = False
