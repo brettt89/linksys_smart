@@ -18,7 +18,10 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up device tracker for UniFi Network integration."""
-    config: LinksysConfig = hass.data[DOMAIN][config_entry.entry_id]
+    config_data = hass.data[DOMAIN][config_entry.entry_id]
+
+    config = LinksysConfig(hass, config_data)
+    await  config.async_initialize()
 
     linksys = Linksys(hass, config)
     await linksys.async_initialize()

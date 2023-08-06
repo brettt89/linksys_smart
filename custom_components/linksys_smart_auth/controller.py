@@ -39,7 +39,7 @@ class LinksysController:
         self.services: list[str] = []
 
 
-    async def async_initialize(self) -> None:
+    async def async_initialize(self):
         """Load Linksys Smart Wifi parameters."""
 
         credentials_string = f"{self.username}:{self.password}"
