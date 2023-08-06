@@ -1,13 +1,18 @@
 """UI for configuring the integration."""
 
+import logging
+
 import base64
 import aiohttp
-import asyncio
 import voluptuous as vol
 
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant import config_entries
 from http import HTTPStatus
+
 from .const import DOMAIN
+
+_LOGGER = logging.getLogger(__name__)
 
 class LinksysWifiConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Store connection configuration"""
@@ -17,7 +22,7 @@ class LinksysWifiConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_user(self, user_input=None):
         if user_input is not None:
             # Validate user input
-            valid = await asyncio.run(self.is_valid(user_input))
+            valid = await self.is_valid(user_input)
             if valid:
                 # Store the data
                 return self.async_create_entry(
@@ -61,13 +66,13 @@ class LinksysWifiConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             "X-JNAP-Authorization": auth_string
         }
         try:
-            async with aiohttp.ClientSession() as session:
-                response = await session.post(
-                    f"http://{host}/JNAP/",
-                    timeout=10,
-                    headers=headers,
-                    data=data,
-                )
+            session = async_get_clientsession(self.hass)
+            response = await session.post(
+                f"http://{host}/JNAP/",
+                timeout=10,
+                headers=headers,
+                json=data,
+            )
         except aiohttp.ServerTimeoutError:
             self.errors["base"] = "timeout"
             return False
@@ -82,7 +87,7 @@ class LinksysWifiConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             return False
 
         try:
-            data = response.json()
+            data = await response.json()
             result = data["result"]
             responses = data["responses"]
 
