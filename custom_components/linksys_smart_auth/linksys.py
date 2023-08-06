@@ -9,6 +9,8 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from .controller import LinksysController
 from .const import DOMAIN
 
+_LOGGER = logging.getLogger(__name__)
+
 class LinksysConfig(Store):
     """Config for manual setup of Google."""
 
@@ -26,12 +28,9 @@ class LinksysConfig(Store):
         """Perform async initialization of config."""
         should_save_data = False
         if (data := await self._store.async_load()) is None:
-            # if the store is not found create an empty one
-            # Note that the first request is always a cloud request,
-            # and that will store the correct agent user id to be used for local requests
             data = {
                 "host": self._config.get("host", None),
-                "username": self._config.get("host", "admin"),
+                "username": self._config.get("username", "admin"),
                 "password": self._config.get("password", None),
             }
             should_save_data = True
@@ -61,14 +60,18 @@ class LinksysConfig(Store):
 class Linksys:
 
     def __init__(self, hass: HomeAssistant, config: LinksysConfig) -> None:
-        session = async_get_clientsession(hass)
-        controller = LinksysController(session, config)
-        controller.async_initialize()
+        self.hass = hass
+        self.config = config
+
+    async def async_initialize(self):
+        session = async_get_clientsession(self.hass)
+        controller = LinksysController(session, self.config)
+        await controller.async_initialize()
 
         self._controller = controller
 
-    async def get_devices(self):
-        return self._controller.async_get_devices()
+    async def async_get_devices(self):
+        return await self._controller.async_get_devices()
 
 # import base64
 # import logging

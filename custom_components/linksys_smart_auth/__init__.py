@@ -3,8 +3,8 @@
 import logging
 
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.typing import ConfigType
 
 from .linksys import Linksys, LinksysConfig
 
@@ -12,13 +12,16 @@ from .const import (
     DOMAIN
 )
 
-_LOGGER = logging.getLogger(__name__)
+PLATFORMS = [Platform.DEVICE_TRACKER]
 
 async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
     """Create a config entry."""
-    config = LinksysConfig(config_entry)
-    linksys = Linksys(hass, config)
-    linksys.initialize()
+    config = LinksysConfig(hass, config_entry.data)
+    await  config.async_initialize()
 
-    hass.data[DOMAIN][config_entry.entry_id] = linksys
+    hass.data.setdefault(DOMAIN, {})
+    hass.data[DOMAIN][config_entry.entry_id] = config
 
+    await hass.config_entries.async_forward_entry_setups(config_entry, PLATFORMS)
+
+    return True

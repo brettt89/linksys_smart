@@ -26,10 +26,8 @@ class LinksysWifiConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             if valid:
                 # Store the data
                 return self.async_create_entry(
-                    title="Linksys Smart Wifi",
-                    data={
-                        "host": user_input["host"]
-                    },
+                    title = "Linksys Smart Wifi",
+                    data = user_input,
                 )
 
             self.errors["base"] = "auth_error"
@@ -103,5 +101,3 @@ class LinksysWifiConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         except (KeyError, IndexError):
             self.errors["base"] = "invalid_response"
             return False
-
-        return True

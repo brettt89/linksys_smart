@@ -6,7 +6,7 @@ from homeassistant.core import Event as HomeAssistant
 from homeassistant.helpers.entity import EntityDescription
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .linksys import Linksys
+from .linksys import Linksys, LinksysConfig
 from .const import DOMAIN
 
 class LinksysTrackerEntityDescription(EntityDescription):
@@ -18,13 +18,21 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up device tracker for UniFi Network integration."""
-    linksys: Linksys = hass.data[DOMAIN][config_entry.entry_id]
+    config: LinksysConfig = hass.data[DOMAIN][config_entry.entry_id]
 
-    async_add_entities(
-        [
-            LinksysScannerEntity(hass=hass, device=device) for device in await linksys.get_devices()
-        ]
-    )
+    linksys = Linksys(hass, config)
+    await linksys.async_initialize()
+    devices = await linksys.async_get_devices()
+
+    device_trackers: list[LinksysScannerEntity] = [
+        LinksysScannerEntity(
+            hass=hass,
+            device=device,
+        )
+        for device in devices
+    ]
+
+    async_add_entities(device_trackers)
 
 class LinksysScannerEntity(ScannerEntity):
     """Representation of a linksys scanner."""

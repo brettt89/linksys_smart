@@ -4,9 +4,13 @@ import base64
 import logging
 
 from aiohttp import ClientSession
-from types import MappingProxyType, Any
+from types import MappingProxyType
+from typing import Any
 
-from .const import LINKSYS_JNAP_ENDPOINT
+from .const import (
+    LINKSYS_JNAP_ACTION_URL,
+    LINKSYS_JNAP_ENDPOINT
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -45,17 +49,21 @@ class LinksysController:
         self.headers[LOCAL_JNAP_ACTION_HEADER] = LOCAL_JNAP_ACTION_TRANSACTION
         self.headers[LOCAL_JNAP_AUTHORIZATION_HEADER] = auth_string
 
-        await self.request("core/GetDeviceInfo")
+        responses = await self.async_get_device_info()
 
-        self.device_info = self.last_response[0]
-        self.services = self.last_response[0].get("services", [])
+        self.device_info = responses[0]
+        self.services = responses[0].get("services", [])
 
+
+    async def async_get_device_info(self) -> list[dict]:
+        """Load Linksys Smart Wifi devices"""
+
+        return await self.request("core/GetDeviceInfo")
 
     async def async_get_devices(self) -> list[dict]:
         """Load Linksys Smart Wifi devices"""
 
-        await self.request("devicelist/GetDevices3")
-        return self.last_response
+        return await self.request("devicelist/GetDevices3")
 
     
     async def request(
@@ -69,7 +77,7 @@ class LinksysController:
         json = [
             {
                 "request": payload,
-                "action": action,
+                "action": f"{LINKSYS_JNAP_ACTION_URL}/{action}",
             }
         ]
 
@@ -100,7 +108,7 @@ def _raise_on_error(data: dict[str, Any] | None) -> None:
         raise Exception("Unexpected reponse from router.")
     
     if data["result"] != "OK":
-        with data["responses"] as response:
-            if "error" in response:
-                raise Exception(response["error"])
+        response = data["responses"][0]
+        if "error" in response:
+            raise Exception(response["error"])
             
