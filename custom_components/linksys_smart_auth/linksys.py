@@ -9,8 +9,6 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from .controller import LinksysController
 from .const import DOMAIN
 
-_LOGGER = logging.getLogger(__name__)
-
 class LinksysConfig(Store):
     """Config for manual setup of Google."""
 
@@ -26,6 +24,7 @@ class LinksysConfig(Store):
 
     async def async_initialize(self):
         """Perform async initialization of config."""
+        await self._store.async_remove()
         should_save_data = False
         if (data := await self._store.async_load()) is None:
             data = {
@@ -62,13 +61,34 @@ class Linksys:
     def __init__(self, hass: HomeAssistant, config: LinksysConfig) -> None:
         self.hass = hass
         self.config = config
+        self.devices = []
+        self.connections = []
 
     async def async_initialize(self):
         session = async_get_clientsession(self.hass)
-        controller = LinksysController(session, self.config)
-        await controller.async_initialize()
+        self._controller = LinksysController(session, self.config)
+        await self._controller.async_initialize()
 
-        self._controller = controller
+        await self.async_get_devices()
+        await self.async_get_network_connections()
 
     async def async_get_devices(self):
-        return await self._controller.async_get_devices()
+        devices = await self._controller.async_get_devices()
+        for device in devices:
+            if len(interface := device["knownInterfaces"]) != 1:
+                continue
+
+            if not ("macAddress" in interface[0]):
+                continue
+
+            mac = interface[0]["macAddress"]
+            self.devices[mac] = device
+            self.devices[mac]["mac"] = mac
+
+    async def async_get_network_connections(self):
+        connections = await self._controller.async_get_network_connections()
+        for connection in connections:
+            mac = connection["macAddress"]
+            self.connections[mac] = connection
+
+        

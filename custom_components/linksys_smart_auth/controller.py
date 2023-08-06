@@ -58,13 +58,28 @@ class LinksysController:
     async def async_get_device_info(self) -> list[dict]:
         """Load Linksys Smart Wifi devices"""
 
-        return await self.request("core/GetDeviceInfo")
+        responses = await self.request("core/GetDeviceInfo")
 
     async def async_get_devices(self) -> list[dict]:
         """Load Linksys Smart Wifi devices"""
 
-        return await self.request("devicelist/GetDevices3")
+        payload = {
+            "sinceRevision": 0
+        }
+        responses = await self.request("devicelist/GetDevices3", payload)
+        output = responses[0]['output']
 
+        devices = output['devices']
+        return devices
+
+    async def async_get_network_connections(self) -> list[dict]:
+        """Load Linksys Smart Wifi network connections"""
+
+        responses = await self.request("networkconnections/GetNetworkConnections")
+        output = responses[0]['output']
+
+        connections = output['connections']
+        return connections
     
     async def request(
         self,
