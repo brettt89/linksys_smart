@@ -53,7 +53,8 @@ class LinksysScannerEntity(ScannerEntity):
     ) -> None:
         self._config: ConfigEntry = config_entry
         self._device = device
-        self._mac_address = device.mac_address
+        self._mac = device.mac_address
+        self._ip = device.ip_address
 
         self._attr_has_entity_name = True
         self._attr_name = device.name
@@ -62,6 +63,16 @@ class LinksysScannerEntity(ScannerEntity):
     @property
     def is_connected(self) -> bool:
         return self._device.is_online()
+
+    @property
+    def ip_address(self) -> str | None:
+        """Get the IP address."""
+        return self._ip
+
+    @property
+    def mac_address(self) -> str | None:
+        """Get the MAC address."""
+        return self._mac
 
     @property
     def source_type(self) -> str:

@@ -93,6 +93,7 @@ class Device:
         self.connections = config.get("connections", [])
         self.online = False
         self.mac_address = None
+        self.ip_address = None
 
         if len(self.interfaces) == 1:
             if "macAddress" in self.interfaces[0]:
