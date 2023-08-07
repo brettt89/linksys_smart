@@ -1,7 +1,7 @@
 
-# Linksys Smart Wi-Fi (Auth)
+# Linksys Smart Wi-Fi
 
-Home Assistant integration for the Linksys Smart Wi-Fi with authentication headers.
+Home Assistant integration for the Linksys Smart Wi-Fi
 
 ## Table of Contents
 

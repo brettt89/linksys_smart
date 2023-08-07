@@ -1,9 +1,0 @@
-{
-    "domain": "linksys_smart_auth",
-    "config_flow": true,
-    "name": "Linksys Smart Wi-Fi (Auth)",
-    "codeowners": [],
-    "documentation": "https://github.com/brettt89/linksys_smart_auth/blob/master/README.md",
-    "iot_class": "local_polling",
-    "version": "2023.8.7b0"
-}

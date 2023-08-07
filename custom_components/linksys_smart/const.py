@@ -1,7 +1,7 @@
 
-"""Constants for Linksys Smart Wifi (Auth)."""
+"""Constants for Linksys Smart Wifi"""
 
-DOMAIN: str = "linksys_smart_auth"
+DOMAIN: str = "linksys_smart"
 
 LINKSYS_CONF_USERNAME: str = "admin"
 LINKSYS_JNAP_ENDPOINT: str = "JNAP/"

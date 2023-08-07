@@ -1,4 +1,4 @@
-"""The linksys_smart_auth component."""
+"""The linksys_smart component."""
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
