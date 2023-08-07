@@ -32,20 +32,19 @@ async def async_setup_entry(
     linksys = Linksys(hass, config)
     await linksys.async_initialize()
 
-    async with linksys.async_device_info() as info:
-        # Register Linksys device
-        device_registry = dr.async_get(hass)
-        device_registry.async_get_or_create(
-            config_entry_id=config_entry.entry_id,
-            connections={(dr.CONNECTION_NETWORK_MAC, info.mac)},
-            identifiers={(DOMAIN, info.serial_number)},
-            manufacturer=info.manufacturer,
-            suggested_area="Lounge",
-            name=info.description,
-            model=info.model_number,
-            sw_version=info.fw_version,
-            hw_version=info.hw_version,
-        )
+    # Register Linksys device
+    device_registry = dr.async_get(hass)
+    device_registry.async_get_or_create(
+        config_entry_id=config_entry.entry_id,
+        connections={(dr.CONNECTION_NETWORK_MAC, linksys.mac)},
+        identifiers={(DOMAIN, linksys.serial_number)},
+        manufacturer=linksys.manufacturer,
+        suggested_area="Lounge",
+        name=linksys.description,
+        model=linksys.model_number,
+        sw_version=linksys.fw_version,
+        hw_version=linksys.hw_version,
+    )
 
     device_trackers: list[LinksysScannerEntity] = [
         LinksysScannerEntity(
