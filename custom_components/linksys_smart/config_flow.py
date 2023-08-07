@@ -34,7 +34,7 @@ class LinksysWifiConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             
         # Specify items in the order they are to be displayed in the UI
         data_schema = {
-            vol.Required("host"): str,
+            vol.Required("host", default="192.168.1.1"): str,
             vol.Required("username", default="admin"): str,
             vol.Required("password"): str,
         }
