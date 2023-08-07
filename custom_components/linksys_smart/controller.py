@@ -3,7 +3,8 @@
 import base64
 import logging
 
-from aiohttp import ClientSession
+from aiohttp import ClientSession, ClientError
+from asyncio import TimeoutError
 from types import MappingProxyType
 from typing import Any
 
@@ -17,6 +18,9 @@ _LOGGER = logging.getLogger(__name__)
 LOCAL_JNAP_ACTION_HEADER = "X-JNAP-Action"
 LOCAL_JNAP_AUTHORIZATION_HEADER = "X-JNAP-Authorization"
 LOCAL_JNAP_ACTION_TRANSACTION = "http://linksys.com/jnap/core/Transaction"
+
+class LinksysError(Exception):
+    """Exception if api error occurs."""
 
 class LinksysController:
     """Manages a single Linksys Smart Wifi Network instance."""
@@ -108,7 +112,7 @@ class LinksysController:
         ]
 
         try:
-            async with self.session.request("post", self.url, headers=self.headers, json=json) as res:
+            async with self.session.request("post", self.url, headers=self.headers, json=json, timeout=10) as res:
                 _LOGGER.debug(
                     "received (from %s) %s %s %s",
                     self.url,
@@ -125,10 +129,8 @@ class LinksysController:
                 _raise_on_error(response)
                 
                 return response["responses"]
-
-        except Exception as e:
-            _LOGGER.error("Request to Linksys router failed: %s", str(e))
-            raise e
+        except TimeoutError:
+            raise ClientError("Timeout occurred when attempting to connect to router.")
         
 
 def _raise_on_error(data: dict[str, Any] | None) -> None:
@@ -137,10 +139,13 @@ def _raise_on_error(data: dict[str, Any] | None) -> None:
         return None
 
     if not "result" in data or not "responses" in data:
-        raise Exception("Unexpected reponse from router.")
-    
+        raise LinksysError("Unexpected reponse from router.")
+
     if data["result"] != "OK":
+        # Error
         response = data["responses"][0]
+        if response["result"] == "_ErrorUnauthorized":
+            raise LinksysError("Invalid authorization credentials.")
         if "error" in response:
-            raise Exception(response["error"])
+            raise LinksysError(response["error"])
             

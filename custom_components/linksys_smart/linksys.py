@@ -2,12 +2,15 @@
 
 from types import MappingProxyType
 
+from aiohttp import ClientError
 from homeassistant.core import Event as HomeAssistant
 from homeassistant.helpers.storage import Store
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
-from .controller import LinksysController
+from .controller import LinksysController, LinksysError
 from .const import DOMAIN
+
+_LOGGER = logging.getLogger(__name__)
 
 class LinksysConfig(Store):
     """Config for manual setup of Google."""
@@ -71,7 +74,14 @@ class Linksys:
         self._controller = LinksysController(session, MappingProxyType(self.config))
         await self._controller.async_initialize()
 
-        device_info = await self._controller.async_get_device_info()
+        try:
+            device_info = await self._controller.async_get_device_info()
+            wan_details = await self._controller.async_get_wan_status()
+            connections = await self._controller.async_get_network_connections()
+            devices = await self._controller.async_get_devices()
+        except (ClientError, LinksysError) as err:
+            _LOGGER.error("Linksys API error: %s", err)
+
         self.manufacturer = device_info.get("manufacturer", "Unknown")
         self.serial_number = device_info.get("serialNumber")
         self.model_number = device_info.get("modelNumber", "Unknown")
@@ -81,19 +91,17 @@ class Linksys:
         self.description = device_info.get("description", "")
         self.services = device_info.get("services", [])
 
-        wan_details = await self._controller.async_get_wan_status()
+        
         self.mac = wan_details.get("macAddress")
         self.wan = {
             "type": wan_details.get("detectedWANType"),
             "status": wan_details.get("wanStatus"),
         }
-
-        connections = await self._controller.async_get_network_connections()
+        
         for connection in connections:
             mac = connection["macAddress"]
             self.connections[mac] = connection
-
-        devices = await self._controller.async_get_devices()
+        
         for data in devices:
             device = Device(data)
             if device.mac_address:

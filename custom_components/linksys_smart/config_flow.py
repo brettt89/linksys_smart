@@ -3,6 +3,7 @@
 import logging
 
 from aiohttp import ClientError
+from asyncio import TimeoutError
 import voluptuous as vol
 from types import MappingProxyType
 from typing import Any
@@ -11,7 +12,7 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant import config_entries
 
 from .const import DOMAIN
-from .controller import LinksysController
+from .controller import LinksysController, LinksysError
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -27,12 +28,12 @@ class LinksysWifiConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             try:
                 # Validate user input
-                controller = LinksysController(self.hass, MappingProxyType(user_input))
+                controller = LinksysController(async_get_clientsession(self.hass), MappingProxyType(user_input))
                 await controller.async_initialize()
                 await controller.check_admin_password()
 
-            except ClientError as e:
-                errors["base"] = str(e)
+            except (ClientError, LinksysError) as err:
+                errors["base"] = str(err)
 
             else:
                 # Store the data
