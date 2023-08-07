@@ -1,6 +1,6 @@
 """ Linksys Smart Wifi Support """
 
-import logging
+from typing import Any
 
 from homeassistant.core import Event as HomeAssistant
 from homeassistant.helpers.storage import Store
@@ -64,26 +64,43 @@ class Linksys:
         self.devices = {}
         self.connections = {}
 
+        self.services = []
+
     async def async_initialize(self):
         session = async_get_clientsession(self.hass)
         self._controller = LinksysController(session, self.config)
         await self._controller.async_initialize()
 
-        devices = await self._controller.async_get_devices()
-        for data in devices:
-            device = Device(data)
-            if device.mac_address:
-                self.devices[device.mac_address] = device
+        async with self._controller.async_get_device_info() as info:
+            self.manufacturer = info.get("manufacturer", "Unknown")
+            self.model_number = info.get("modelNumber", "Unknown")
+            self.hw_version = info.get("hardwareVersion")
+            self.fw_version = info.get("firmwareVersion")
+            self.fw_date = info.get("firmwareDate")
+            self.description = info.get("description", "")
+            self.services = info.get("services", [])
 
-        connections = await self._controller.async_get_network_connections()
-        for connection in connections:
-            mac = connection["macAddress"]
-            self.connections[mac] = connection
+        async with self._controller.async_get_wan_status() as details:
+            self.mac = details.get("macAddress")
+            self.wan = {
+                "type": details.get("detectedWANType"),
+                "status": details.get("wanStatus"),
+            }
 
-            if mac in self.devices:
-                device: Device = self.devices[mac]
-                device.seen()
+        async with  self._controller.async_get_devices() as devices:
+            for data in devices:
+                device = Device(data)
+                if device.mac_address:
+                    self.devices[device.mac_address] = device
 
+        async with  self._controller.async_get_network_connections() as connections:
+            for connection in connections:
+                mac = connection["macAddress"]
+                self.connections[mac] = connection
+
+                if mac in self.devices:
+                    device: Device = self.devices[mac]
+                    device.seen()
         
 class Device:
     def __init__(self, config):

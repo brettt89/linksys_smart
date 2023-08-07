@@ -35,9 +35,6 @@ class LinksysController:
         self.url = f"http://{self.host}/{LINKSYS_JNAP_ENDPOINT}"
         self.headers: dict[str, Any] = {}
 
-        self.details: dict[str, Any] = {}
-        self.services: list[str] = []
-
 
     async def async_initialize(self):
         """Load Linksys Smart Wifi parameters."""
@@ -48,12 +45,6 @@ class LinksysController:
 
         self.headers[LOCAL_JNAP_ACTION_HEADER] = LOCAL_JNAP_ACTION_TRANSACTION
         self.headers[LOCAL_JNAP_AUTHORIZATION_HEADER] = auth_string
-
-        device_info = await self.async_get_device_info()
-
-        self.device_info = device_info
-        self.services = device_info.get("services", [])
-
 
     async def async_get_device_info(self) -> list[dict]:
         """Load Linksys Smart Wifi devices"""
@@ -83,6 +74,14 @@ class LinksysController:
 
         connections = output['connections']
         return connections
+
+    async def async_get_wan_status(self) -> dict:
+        """Load Linksys Smart Wifi network connections"""
+
+        responses = await self.request("router/GetWANStatus")
+        output = responses[0]['output']
+
+        return output
     
     async def request(
         self,
