@@ -88,7 +88,7 @@ class Linksys:
 class Device:
     def __init__(self, config):
         self.id = config.get("deviceID")
-        self.name = config.get("friendlyName", "Unknown")
+        self._friendly_name = config.get("friendlyName", None)
         self.interfaces = config.get("knownInterfaces", [])
         self.connections = config.get("connections", [])
         self.online = False
@@ -105,16 +105,22 @@ class Device:
             if "ipv6Address" in self.connections[0]:
                 self.ipv6_address = self.connections[0].get("ipv6Address")
 
-    def is_online(self):
+    @property
+    def is_online(self) -> bool:
         return self.online
 
-    def seen(self):
+    def seen(self) -> None:
         self.online = True
 
-    def unseen(self):
+    def unseen(self) -> None:
         self.online = False
 
-    def unique_id(self):
-        if hasattr(self, "mac_address"):
+    @property
+    def name(self) -> str | None:
+        return self._friendly_name
+
+    @property
+    def unique_id(self) -> str | None:
+        if self.mac_address:
             return self.mac_address
         return self.id
