@@ -1,6 +1,6 @@
 """ Linksys Smart Wifi Support """
 
-from typing import Any
+from types import MappingProxyType
 
 from homeassistant.core import Event as HomeAssistant
 from homeassistant.helpers.storage import Store
@@ -68,7 +68,7 @@ class Linksys:
 
     async def async_initialize(self):
         session = async_get_clientsession(self.hass)
-        self._controller = LinksysController(session, self.config)
+        self._controller = LinksysController(session, MappingProxyType(self.config))
         await self._controller.async_initialize()
 
         device_info = await self._controller.async_get_device_info()

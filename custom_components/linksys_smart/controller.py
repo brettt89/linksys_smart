@@ -28,9 +28,9 @@ class LinksysController:
         self.session = session
         self.last_response = None
 
-        self.host = config.host
-        self.username = config.username
-        self.password = config.password
+        self.host = config.get("host")
+        self.username = config.get("username")
+        self.password = config.get("password")
 
         self.url = f"http://{self.host}/{LINKSYS_JNAP_ENDPOINT}"
         self.headers: dict[str, Any] = {}
@@ -45,6 +45,15 @@ class LinksysController:
 
         self.headers[LOCAL_JNAP_ACTION_HEADER] = LOCAL_JNAP_ACTION_TRANSACTION
         self.headers[LOCAL_JNAP_AUTHORIZATION_HEADER] = auth_string
+
+    async def check_admin_password(self) -> bool:
+        """Load Linksys Smart Wifi devices"""
+
+        responses = await self.request("core/CheckAdminPassword")
+        result = responses[0]['result']
+
+        return result == "OK"
+
 
     async def async_get_device_info(self) -> list[dict]:
         """Load Linksys Smart Wifi devices"""
@@ -98,23 +107,29 @@ class LinksysController:
             }
         ]
 
-        async with self.session.request("post", self.url, headers=self.headers, json=json) as res:
-            _LOGGER.debug(
-                "received (from %s) %s %s %s",
-                self.url,
-                res.status,
-                res.content_type,
-                res,
-            )
+        try:
+            async with self.session.request("post", self.url, headers=self.headers, json=json) as res:
+                _LOGGER.debug(
+                    "received (from %s) %s %s %s",
+                    self.url,
+                    res.status,
+                    res.content_type,
+                    res,
+                )
 
-            res.raise_for_status()
-            self.last_response = res
+                res.raise_for_status()
+                self.last_response = res
 
-            response = await res.json()
-            _LOGGER.debug("data (from %s) %s", self.url, response)
-            _raise_on_error(response)
+                response = await res.json()
+                _LOGGER.debug("data (from %s) %s", self.url, response)
+                _raise_on_error(response)
+                
+                return response["responses"]
 
-            return response["responses"]
+        except Exception as e:
+            _LOGGER.error("Request to Linksys router failed: %s", str(e))
+            raise e
+        
 
 def _raise_on_error(data: dict[str, Any] | None) -> None:
     """Check response for error message."""
