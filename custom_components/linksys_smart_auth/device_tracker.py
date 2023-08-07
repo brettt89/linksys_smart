@@ -12,6 +12,8 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from .linksys import Linksys, LinksysConfig, Device
 from .const import DOMAIN
 
+_LOGGER = logging.getLogger(__name__)
+
 class LinksysTrackerEntityDescription(EntityDescription):
     """Class describing Linksys device tracker entity."""
 
@@ -56,6 +58,8 @@ class LinksysScannerEntity(ScannerEntity):
         self._mac = device.mac_address
         self._ip = device.ip_address
 
+        _LOGGER.debug("Mac Address: %s", self._mac)
+
         self._attr_has_entity_name = True
         self._attr_name = device.name
         self._connections = device.connections
@@ -88,4 +92,6 @@ class LinksysScannerEntity(ScannerEntity):
                 f"{ENTITY_DOMAIN.lower()}::"
                 f"{self._device.unique_id}"
             )
+        
+        return None
         

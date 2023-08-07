@@ -87,10 +87,11 @@ class Linksys:
         
 class Device:
     def __init__(self, config):
-        self.id = config.get("deviceID")
-        self._friendly_name = config.get("friendlyName", None)
+        self.device_id = config.get("deviceID")
+        self.friendly_name = config.get("friendlyName", None)
         self.interfaces = config.get("knownInterfaces", [])
         self.connections = config.get("connections", [])
+        self.properties = config.get("properties", [])
         self.online = False
         self.mac_address = None
         self.ip_address = None
@@ -105,7 +106,6 @@ class Device:
             if "ipv6Address" in self.connections[0]:
                 self.ipv6_address = self.connections[0].get("ipv6Address")
 
-    @property
     def is_online(self) -> bool:
         return self.online
 
@@ -117,7 +117,17 @@ class Device:
 
     @property
     def name(self) -> str | None:
-        return self._friendly_name
+        # Check properties for name value and return if found
+        for prop in self.properties:
+            if prop["name"] == "userDeviceName":
+                return prop["value"]
+        
+        # If device has a friendly name, return that
+        if self.friendly_name:
+            return self.friendly_name
+
+        # default to device_id if nothing else can be found
+        return self.device_id
 
     @property
     def unique_id(self) -> str | None:
