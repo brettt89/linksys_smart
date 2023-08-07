@@ -73,6 +73,7 @@ class Linksys:
 
         device_info = await self._controller.async_get_device_info()
         self.manufacturer = device_info.get("manufacturer", "Unknown")
+        self.serial_number = device_info.get("serialNumber")
         self.model_number = device_info.get("modelNumber", "Unknown")
         self.hw_version = device_info.get("hardwareVersion")
         self.fw_version = device_info.get("firmwareVersion")
@@ -87,20 +88,29 @@ class Linksys:
             "status": wan_details.get("wanStatus"),
         }
 
+        connections = await self._controller.async_get_network_connections()
+        for connection in connections:
+            mac = connection["macAddress"]
+            self.connections[mac] = connection
+
         devices = await self._controller.async_get_devices()
         for data in devices:
             device = Device(data)
             if device.mac_address:
                 self.devices[device.mac_address] = device
 
-        connections = await self._controller.async_get_network_connections()
-        for connection in connections:
-            mac = connection["macAddress"]
-            self.connections[mac] = connection
-
-            if mac in self.devices:
-                device: Device = self.devices[mac]
+            # If device is matching router, then mark as seen
+            if self.mac == device.mac_address:
                 device.seen()
+                continue
+
+            # Check devices for mac address and mark as seen
+            if device.mac_address in self.connections:
+                device.seen()
+                continue
+
+            # If mac not found in devices, mark as unseen
+            device.unseen()
         
 class Device:
     def __init__(self, config):
