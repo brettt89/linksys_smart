@@ -1,5 +1,6 @@
 """ Linksys Smart Wifi Support """
 
+import logging
 from types import MappingProxyType
 
 from aiohttp import ClientError

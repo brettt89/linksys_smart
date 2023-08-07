@@ -14,8 +14,6 @@ from homeassistant import config_entries
 from .const import DOMAIN
 from .controller import LinksysController, LinksysError
 
-_LOGGER = logging.getLogger(__name__)
-
 class LinksysWifiConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Store connection configuration"""
     def __init__(self):
