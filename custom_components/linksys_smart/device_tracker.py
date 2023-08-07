@@ -39,7 +39,7 @@ async def async_setup_entry(
         connections={(dr.CONNECTION_NETWORK_MAC, linksys.mac)},
         identifiers={(DOMAIN, linksys.serial_number)},
         manufacturer=linksys.manufacturer,
-        suggested_area="Lounge",
+        suggested_area="Living Room",
         name=linksys.description,
         model=linksys.model_number,
         sw_version=linksys.fw_version,
@@ -50,7 +50,6 @@ async def async_setup_entry(
         LinksysScannerEntity(
             config_entry=config_entry,
             device=device,
-            connections=linksys.connections
         )
         for device in linksys.devices.values()
     ]
@@ -66,14 +65,11 @@ class LinksysScannerEntity(ScannerEntity):
         self,
         config_entry: ConfigEntry,
         device: Device,
-        connections: list,
     ) -> None:
         self._config: ConfigEntry = config_entry
         self._device = device
         self._mac = device.mac_address
         self._ip = device.ip_address
-
-        _LOGGER.debug("Mac Address: %s", self._mac)
 
         self._attr_has_entity_name = True
         self._attr_name = device.name

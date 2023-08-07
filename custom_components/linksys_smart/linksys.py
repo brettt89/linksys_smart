@@ -60,6 +60,9 @@ class LinksysConfig(Store):
     def password(self):
         return self._data.get("password")
 
+    def get(self, name):
+        return self._data.get(name)
+
 class Linksys:
 
     def __init__(self, hass: HomeAssistant, config: LinksysConfig) -> None:
@@ -72,7 +75,7 @@ class Linksys:
 
     async def async_initialize(self):
         session = async_get_clientsession(self.hass)
-        self._controller = LinksysController(session, MappingProxyType(self.config))
+        self._controller = LinksysController(session, self.config)
         await self._controller.async_initialize()
 
         try:
