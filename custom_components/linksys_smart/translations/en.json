@@ -1,0 +1,16 @@
+{
+    "config": {
+        "flow_title": "{name}",
+        "step": {
+            "user": {
+                "data": {
+                    "host": "Router Hostname / IP",
+                    "username": "Router Username",
+                    "password": "Router Password"
+                },
+                "description": "Enter the details to connect to the Linksys Smart Wifi router.",
+                "title": "Linksys Smart Wifi"
+            }
+        }
+    }
+}
