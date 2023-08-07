@@ -12,8 +12,6 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from .linksys import Linksys, LinksysConfig, Device
 from .const import DOMAIN
 
-_LOGGER = logging.getLogger(__name__)
-
 class LinksysTrackerEntityDescription(EntityDescription):
     """Class describing Linksys device tracker entity."""
 
@@ -24,13 +22,6 @@ async def async_setup_entry(
 ) -> None:
     """Set up device tracker for UniFi Network integration."""
     config_data = hass.data[DOMAIN][config_entry.entry_id]
-
-    _LOGGER.debug(
-        "Config Data: %s %s %s",
-        config_data.host,
-        config_data.username,
-        config_data.password,
-    )
 
     config = LinksysConfig(hass, config_data)
     await  config.async_initialize()

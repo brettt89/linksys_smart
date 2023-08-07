@@ -72,7 +72,8 @@ class Linksys:
         devices = await self._controller.async_get_devices()
         for data in devices:
             device = Device(data)
-            self.devices[device.mac_address] = device
+            if device.mac_address:
+                self.devices[device.mac_address] = device
 
         connections = await self._controller.async_get_network_connections()
         for connection in connections:
@@ -91,6 +92,7 @@ class Device:
         self.interfaces = config.get("knownInterfaces", [])
         self.connections = config.get("connections", [])
         self.online = False
+        self.mac_address = None
 
         if len(self.interfaces) == 1:
             if "macAddress" in self.interfaces[0]:
