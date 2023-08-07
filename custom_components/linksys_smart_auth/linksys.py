@@ -71,36 +71,36 @@ class Linksys:
         self._controller = LinksysController(session, self.config)
         await self._controller.async_initialize()
 
-        async with self._controller.async_get_device_info() as info:
-            self.manufacturer = info.get("manufacturer", "Unknown")
-            self.model_number = info.get("modelNumber", "Unknown")
-            self.hw_version = info.get("hardwareVersion")
-            self.fw_version = info.get("firmwareVersion")
-            self.fw_date = info.get("firmwareDate")
-            self.description = info.get("description", "")
-            self.services = info.get("services", [])
+        device_info = await self._controller.async_get_device_info()
+        self.manufacturer = device_info.get("manufacturer", "Unknown")
+        self.model_number = device_info.get("modelNumber", "Unknown")
+        self.hw_version = device_info.get("hardwareVersion")
+        self.fw_version = device_info.get("firmwareVersion")
+        self.fw_date = device_info.get("firmwareDate")
+        self.description = device_info.get("description", "")
+        self.services = device_info.get("services", [])
 
-        async with self._controller.async_get_wan_status() as details:
-            self.mac = details.get("macAddress")
-            self.wan = {
-                "type": details.get("detectedWANType"),
-                "status": details.get("wanStatus"),
-            }
+        wan_details = await self._controller.async_get_wan_status()
+        self.mac = wan_details.get("macAddress")
+        self.wan = {
+            "type": wan_details.get("detectedWANType"),
+            "status": wan_details.get("wanStatus"),
+        }
 
-        async with  self._controller.async_get_devices() as devices:
-            for data in devices:
-                device = Device(data)
-                if device.mac_address:
-                    self.devices[device.mac_address] = device
+        devices = await self._controller.async_get_devices()
+        for data in devices:
+            device = Device(data)
+            if device.mac_address:
+                self.devices[device.mac_address] = device
 
-        async with  self._controller.async_get_network_connections() as connections:
-            for connection in connections:
-                mac = connection["macAddress"]
-                self.connections[mac] = connection
+        connections = await self._controller.async_get_network_connections()
+        for connection in connections:
+            mac = connection["macAddress"]
+            self.connections[mac] = connection
 
-                if mac in self.devices:
-                    device: Device = self.devices[mac]
-                    device.seen()
+            if mac in self.devices:
+                device: Device = self.devices[mac]
+                device.seen()
         
 class Device:
     def __init__(self, config):
