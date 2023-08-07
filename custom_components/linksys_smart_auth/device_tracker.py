@@ -2,7 +2,8 @@
 
 import logging
 
-from homeassistant.components.device_tracker import ScannerEntity
+from homeassistant.components.device_tracker import ScannerEntity, SourceType
+from homeassistant.components.device_tracker import DOMAIN as ENTITY_DOMAIN
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import Event as HomeAssistant
 from homeassistant.helpers.entity import EntityDescription
@@ -26,9 +27,9 @@ async def async_setup_entry(
 
     _LOGGER.debug(
         "Config Data: %s %s %s",
-        config_data.get("host"),
-        config_data.get("username"),
-        config_data.get("password"),
+        config_data.host,
+        config_data.username,
+        config_data.password,
     )
 
     config = LinksysConfig(hass, config_data)
@@ -39,11 +40,11 @@ async def async_setup_entry(
 
     device_trackers: list[LinksysScannerEntity] = [
         LinksysScannerEntity(
-            hass=hass,
+            config_entry=config_entry,
             device=device,
             connections=linksys.connections
         )
-        for device in linksys.devices
+        for device in linksys.devices.values()
     ]
 
     async_add_entities(device_trackers)
@@ -55,18 +56,34 @@ class LinksysScannerEntity(ScannerEntity):
 
     def __init__(
         self,
-        hass: HomeAssistant,
+        config_entry: ConfigEntry,
         device: Device,
         connections: list,
     ) -> None:
-        self.hass = hass
+        self._config: ConfigEntry = config_entry
         self._device = device
-        self._mac_address = device.get("mac_address", None)
+        self._mac_address = device.mac_address
 
-        self._id = device.get("id")
-        self._name = device.get('name', self._id)
-        self._connections = device.get('connections')
+        self._attr_has_entity_name = True
+        self._attr_name = device.name
+        self._connections = device.connections
 
+    @property
     def is_connected(self) -> bool:
         return self._device.is_online()
+
+    @property
+    def source_type(self) -> str:
+        """Get the source of the device tracker."""
+        return SourceType.ROUTER
+
+    @property
+    def unique_id(self) -> str | None:
+        """Get the unique_id."""
+        if self._device is not None:
+            return (
+                f"{self._config.entry_id}::"
+                f"{ENTITY_DOMAIN.lower()}::"
+                f"{self._device.unique_id}"
+            )
         

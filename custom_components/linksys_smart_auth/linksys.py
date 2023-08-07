@@ -69,16 +69,11 @@ class Linksys:
         self._controller = LinksysController(session, self.config)
         await self._controller.async_initialize()
 
-        await self.async_get_devices()
-        await self.async_get_network_connections()
-
-    async def async_get_devices(self):
         devices = await self._controller.async_get_devices()
         for data in devices:
             device = Device(data)
-            self.devices[device.mac] = device
+            self.devices[device.mac_address] = device
 
-    async def async_get_network_connections(self):
         connections = await self._controller.async_get_network_connections()
         for connection in connections:
             mac = connection["macAddress"]
@@ -115,3 +110,8 @@ class Device:
 
     def unseen(self):
         self.online = False
+
+    def unique_id(self):
+        if hasattr(self, "mac_address"):
+            return self.mac_address
+        return self.id
