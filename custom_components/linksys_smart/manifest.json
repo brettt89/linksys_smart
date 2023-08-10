@@ -5,5 +5,5 @@
     "codeowners": ["@brettt89"],
     "documentation": "https://github.com/brettt89/linksys_smart/blob/master/README.md",
     "iot_class": "local_polling",
-    "version": "2023.8.10b0"
+    "version": "2023.8.10b1"
 }

@@ -21,8 +21,6 @@ from .const import (
     DOMAIN,
 )
 from .controller import LinksysController, LinksysError, AuthError
-from .hub import get_api
-
 
 class MikrotikFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle a Mikrotik config flow."""
