@@ -1,108 +1,113 @@
 """Linksys Smart Wifi device tracking"""
+from __future__ import annotations
 
-import logging
-
-from homeassistant.components.device_tracker import ScannerEntity, SourceType
-from homeassistant.components.device_tracker import DOMAIN as ENTITY_DOMAIN
+from homeassistant.components.device_tracker import (
+    DOMAIN as DEVICE_TRACKER,
+    ScannerEntity,
+    SourceType,
+)
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import Event as HomeAssistant
-from homeassistant.helpers import device_registry as dr
-from homeassistant.helpers.entity import EntityDescription
+from homeassistant.core import Event as HomeAssistant, callback
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
+import homeassistant.util.dt as dt_util
 
-from .linksys import Linksys, LinksysConfig, Device
 from .const import DOMAIN
-
-_LOGGER = logging.getLogger(__name__)
-
-class LinksysTrackerEntityDescription(EntityDescription):
-    """Class describing Linksys device tracker entity."""
+from .hub import Device, LinksysDataUpdateCoordinator
 
 async def async_setup_entry(
     hass: HomeAssistant,
     config_entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Set up device tracker for UniFi Network integration."""
-    config_data = hass.data[DOMAIN][config_entry.entry_id]
-
-    config = LinksysConfig(hass, config_data)
-    await  config.async_initialize()
-
-    linksys = Linksys(hass, config)
-    await linksys.async_initialize()
-
-    # Register Linksys device
-    device_registry = dr.async_get(hass)
-    device_registry.async_get_or_create(
-        config_entry_id=config_entry.entry_id,
-        connections={(dr.CONNECTION_NETWORK_MAC, linksys.mac)},
-        identifiers={(DOMAIN, linksys.serial_number)},
-        manufacturer=linksys.manufacturer,
-        suggested_area="Living Room",
-        name=linksys.description,
-        model=linksys.model_number,
-        sw_version=linksys.fw_version,
-        hw_version=linksys.hw_version,
-    )
-
-    device_trackers: list[LinksysScannerEntity] = [
-        LinksysScannerEntity(
-            config_entry=config_entry,
-            device=device,
-        )
-        for device in linksys.devices.values()
+    """Set up device tracker for Linksys component."""
+    coordinator: LinksysDataUpdateCoordinator = hass.data[DOMAIN][
+        config_entry.entry_id
     ]
 
-    async_add_entities(device_trackers)
+    tracked: dict[str, LinksysDataUpdateCoordinatorTracker] = {}
 
-class LinksysScannerEntity(ScannerEntity):
-    """Representation of a linksys scanner."""
+    registry = er.async_get(hass)
 
-    entity_description: LinksysTrackerEntityDescription
+    # Restore clients that is not a part of active clients list.
+    for entity in registry.entities.values():
+        if (
+            entity.config_entry_id == config_entry.entry_id
+            and entity.domain == DEVICE_TRACKER
+        ):
+            if (
+                entity.unique_id in coordinator.api.devices
+                or entity.unique_id not in coordinator.api.all_devices
+            ):
+                continue
+            coordinator.api.restore_device(entity.unique_id)
+
+    @callback
+    def update_hub() -> None:
+        """Update the status of the device."""
+        update_items(coordinator, async_add_entities, tracked)
+
+    config_entry.async_on_unload(coordinator.async_add_listener(update_hub))
+
+    update_hub()
+
+@callback
+def update_items(
+    coordinator: LinksysDataUpdateCoordinator,
+    async_add_entities: AddEntitiesCallback,
+    tracked: dict[str, LinksysDataUpdateCoordinatorTracker],
+) -> None:
+    """Update tracked device state from the hub."""
+    new_tracked: list[LinksysDataUpdateCoordinatorTracker] = []
+    for mac, device in coordinator.api.devices.items():
+        if mac not in tracked:
+            tracked[mac] = LinksysDataUpdateCoordinatorTracker(device, coordinator)
+            new_tracked.append(tracked[mac])
+
+    async_add_entities(new_tracked)
+
+class LinksysDataUpdateCoordinatorTracker(
+    CoordinatorEntity[LinksysDataUpdateCoordinator], ScannerEntity
+):
+    """Representation of network device."""
 
     def __init__(
-        self,
-        config_entry: ConfigEntry,
-        device: Device,
+        self, device: Device, coordinator: LinksysDataUpdateCoordinator
     ) -> None:
-        self._config: ConfigEntry = config_entry
-        self._device = device
-        self._mac = device.mac_address
-        self._ip = device.ip_address
-
-        self._attr_has_entity_name = True
+        """Initialize the tracked device."""
+        super().__init__(coordinator)
+        self.device = device
         self._attr_name = device.name
-        self._connections = device.connections
+        self._attr_unique_id = device.mac
 
     @property
     def is_connected(self) -> bool:
-        return self._device.is_online()
+        """Return true if the client is connected to the network."""
+        if (
+            self.device.last_seen
+            and (dt_util.utcnow() - self.device.last_seen)
+            < self.coordinator.option_detection_time
+        ):
+            return True
+        return False
 
     @property
-    def ip_address(self) -> str | None:
-        """Get the IP address."""
-        return self._ip
-
-    @property
-    def mac_address(self) -> str | None:
-        """Get the MAC address."""
-        return self._mac
-
-    @property
-    def source_type(self) -> str:
-        """Get the source of the device tracker."""
+    def source_type(self) -> SourceType:
+        """Return the source type of the client."""
         return SourceType.ROUTER
 
     @property
-    def unique_id(self) -> str | None:
-        """Get the unique_id."""
-        if self._device is not None:
-            return (
-                f"{self._config.entry_id}::"
-                f"{ENTITY_DOMAIN.lower()}::"
-                f"{self._device.unique_id}"
-            )
-        
-        return None
-        
+    def hostname(self) -> str:
+        """Return the hostname of the client."""
+        return self.device.name
+
+    @property
+    def mac_address(self) -> str:
+        """Return the mac address of the client."""
+        return self.device.mac
+
+    @property
+    def ip_address(self) -> str | None:
+        """Return the mac address of the client."""
+        return self.device.ip_address

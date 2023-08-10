@@ -1,4 +1,5 @@
 """Linksys Smart Wifi Network abstraction."""
+from __future__ import annotations
 
 import base64
 import logging
@@ -8,19 +9,19 @@ from asyncio import TimeoutError
 from types import MappingProxyType
 from typing import Any
 
-from .const import (
-    LINKSYS_JNAP_ACTION_URL,
-    LINKSYS_JNAP_ENDPOINT
-)
-
 _LOGGER = logging.getLogger(__name__)
 
-LOCAL_JNAP_ACTION_HEADER = "X-JNAP-Action"
-LOCAL_JNAP_AUTHORIZATION_HEADER = "X-JNAP-Authorization"
-LOCAL_JNAP_ACTION_TRANSACTION = "http://linksys.com/jnap/core/Transaction"
+LINKSYS_JNAP_ENDPOINT: str = "/JNAP"
+LINKSYS_JNAP_ACTION_URL: str = "http://linksys.com/jnap"
+LINKSYS_JNAP_ACTION_HEADER = "X-JNAP-Action"
+LINKSYS_JNAP_AUTHORIZATION_HEADER = "X-JNAP-Authorization"
+LINKSYS_JNAP_ACTION_TRANSACTION = "http://linksys.com/jnap/core/Transaction"
 
 class LinksysError(Exception):
     """Exception if api error occurs."""
+
+class AuthError(LinksysError):
+    """Exception if auth error occurs."""
 
 class LinksysController:
     """Manages a single Linksys Smart Wifi Network instance."""
@@ -29,28 +30,27 @@ class LinksysController:
         self, session: ClientSession, config: MappingProxyType[str, Any],
     ) -> None:
         """Initialize the system."""
-        self.session = session
-        self.last_response = None
-
-        self.host = config.get("host")
-        self.username = config.get("username")
-        self.password = config.get("password")
-
-        self.url = f"http://{self.host}/{LINKSYS_JNAP_ENDPOINT}"
+        self._session = session
+        self._config = config
+        self.url: str = ""
         self.headers: dict[str, Any] = {}
 
 
     async def async_initialize(self):
         """Load Linksys Smart Wifi parameters."""
+        host = self._config.get("host")
+        self.url = f"http://{host}/{LINKSYS_JNAP_ENDPOINT}"
 
-        credentials_string = f"{self.username}:{self.password}"
+        username = self._config.get("username")
+        password = self._config.get("password")
+        credentials_string = f"{username}:{password}"
         encoded_credentials = base64.b64encode(credentials_string.encode()).decode()
         auth_string =  f"Basic {encoded_credentials}"
 
-        self.headers[LOCAL_JNAP_ACTION_HEADER] = LOCAL_JNAP_ACTION_TRANSACTION
-        self.headers[LOCAL_JNAP_AUTHORIZATION_HEADER] = auth_string
+        self.headers[LINKSYS_JNAP_ACTION_HEADER] = LINKSYS_JNAP_ACTION_TRANSACTION
+        self.headers[LINKSYS_JNAP_AUTHORIZATION_HEADER] = auth_string
 
-    async def check_admin_password(self) -> bool:
+    async def async_check_admin_password(self) -> bool:
         """Load Linksys Smart Wifi devices"""
 
         responses = await self.request("core/CheckAdminPassword")
@@ -102,8 +102,6 @@ class LinksysController:
         payload: dict[str, Any] = {},
     ):
         """Make a request to the API."""
-        self.last_response = None
-
         json = [
             {
                 "request": payload,
@@ -122,7 +120,6 @@ class LinksysController:
                 )
 
                 res.raise_for_status()
-                self.last_response = res
 
                 response = await res.json()
                 _LOGGER.debug("data (from %s) %s", self.url, response)
@@ -145,7 +142,7 @@ def _raise_on_error(data: dict[str, Any] | None) -> None:
         # Error
         response = data["responses"][0]
         if response["result"] == "_ErrorUnauthorized":
-            raise LinksysError("Invalid authorization credentials.")
+            raise AuthError("Invalid authorization credentials.")
         if "error" in response:
             raise LinksysError(response["error"])
             
