@@ -58,13 +58,13 @@ class LinksysData:
 
     async def async_update_devices(self) -> None:
         """Get list of devices with latest status."""
-        if devices := await self.api.get_devices():
+        if devices := await self.api.async_get_devices():
             self.all_devices = self.load_mac(devices)
 
         if not self.all_devices:
             return
 
-        if conns := await self.api.get_network_connections():
+        if conns := await self.api.async_get_network_connections():
             connections = self.load_mac(conns)
 
         for mac, params in self.all_devices.items():
@@ -139,4 +139,4 @@ class LinksysDataUpdateCoordinator(DataUpdateCoordinator[None]):
 
     async def _async_update_data(self) -> None:
         """Update Linksys devices information."""
-        self._linksys_data.async_update_devices()
+        await self._linksys_data.async_update_devices()
