@@ -10,8 +10,9 @@ class Device:
     """Represents a network device."""
 
 
-    def __init__(self, params: dict[str, Any]):
+    def __init__(self, mac: str, params: dict[str, Any]):
         """Initialize the network device."""
+        self._mac = mac
         self._params = params
         self._last_seen: datetime | None = None   
 
@@ -39,8 +40,7 @@ class Device:
     @property
     def mac(self) -> str | None:
         """Return device mac."""
-        if len(connections := self._params.get("knownInterfaces", [])) == 1:
-            return connections[0].get("macAddress")  
+        return self._mac
 
     @property
     def last_seen(self) -> datetime | None:
