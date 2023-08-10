@@ -1,4 +1,4 @@
-"""Config flow for Mikrotik."""
+"""Config flow for Linksys."""
 from __future__ import annotations
 
 from collections.abc import Mapping
@@ -14,19 +14,30 @@ from homeassistant.const import (
     CONF_PASSWORD,
     CONF_USERNAME,
 )
+from homeassistant.core import callback
 from homeassistant.data_entry_flow import FlowResult
 
 from .const import (
+    CONF_DETECTION_TIME,
+    DEFAULT_DETECTION_TIME,
     DEFAULT_NAME,
     DOMAIN,
 )
 from .controller import LinksysController, LinksysError, AuthError, UnkownActionError
 
-class MikrotikFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
-    """Handle a Mikrotik config flow."""
+class LinksysFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
+    """Handle a Linksys config flow."""
 
     VERSION = 1
     _reauth_entry: config_entries.ConfigEntry | None
+
+    @staticmethod
+    @callback
+    def async_get_options_flow(
+        config_entry: config_entries.ConfigEntry,
+    ) -> LinksysOptionsFlowHandler:
+        """Get the options flow for this handler."""
+        return LinksysOptionsFlowHandler(config_entry)
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
@@ -106,4 +117,37 @@ class MikrotikFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                 }
             ),
             errors=errors,
+        )
+
+class LinksysOptionsFlowHandler(config_entries.OptionsFlow):
+    """Handle Linksys options."""
+
+    def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
+        """Initialize Linksys options flow."""
+        self.config_entry = config_entry
+
+    async def async_step_init(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Manage the Linksys options."""
+        return await self.async_step_device_tracker()
+
+    async def async_step_device_tracker(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Manage the device tracker options."""
+        if user_input is not None:
+            return self.async_create_entry(title="", data=user_input)
+
+        options = {
+            vol.Optional(
+                CONF_DETECTION_TIME,
+                default=self.config_entry.options.get(
+                    CONF_DETECTION_TIME, DEFAULT_DETECTION_TIME
+                ),
+            ): int,
+        }
+
+        return self.async_show_form(
+            step_id="device_tracker", data_schema=vol.Schema(options)
         )

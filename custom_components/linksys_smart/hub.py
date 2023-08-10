@@ -10,6 +10,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
 from .const import (
+    CONF_DETECTION_TIME,
     DEFAULT_DETECTION_TIME,
     DOMAIN
 )
@@ -89,7 +90,7 @@ class LinksysDataUpdateCoordinator(DataUpdateCoordinator[None]):
     def __init__(
         self, hass: HomeAssistant, config_entry: ConfigEntry, api: LinksysController
     ) -> None:
-        """Initialize the Mikrotik Client."""
+        """Initialize the Linksys Client."""
         self.hass = hass
         self.config_entry: ConfigEntry = config_entry
         self._linksys_data = LinksysData(self.hass, self.config_entry, api)
@@ -143,7 +144,11 @@ class LinksysDataUpdateCoordinator(DataUpdateCoordinator[None]):
     @property
     def option_detection_time(self) -> timedelta:
         """Config entry option defining number of seconds from last seen to away."""
-        return timedelta(DEFAULT_DETECTION_TIME)
+        return timedelta(
+            seconds=self.config_entry.options.get(
+                CONF_DETECTION_TIME, DEFAULT_DETECTION_TIME
+            )
+        )
 
     async def _async_update_data(self) -> None:
         """Update Linksys devices information."""

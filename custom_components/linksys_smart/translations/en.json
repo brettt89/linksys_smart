@@ -26,5 +26,14 @@
         "already_configured": "Linksys router is already configured.",
         "reauth_successful": "Authentication successful."
       }
+    },
+    "options": {
+      "step": {
+        "device_tracker": {
+          "data": {
+            "detection_time": "Consider home interval"
+          }
+        }
+      }
     }
   }
