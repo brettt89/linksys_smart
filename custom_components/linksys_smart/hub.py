@@ -9,7 +9,10 @@ from homeassistant.const import CONF_HOST
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
-from .const import DOMAIN
+from .const import (
+    DEFAULT_DETECTION_TIME,
+    DOMAIN
+)
 from .controller import LinksysController
 from .device import Device
 
@@ -136,6 +139,11 @@ class LinksysDataUpdateCoordinator(DataUpdateCoordinator[None]):
     def api(self) -> LinksysData:
         """Represent Linksys data object."""
         return self._linksys_data
+
+    @property
+    def option_detection_time(self) -> timedelta:
+        """Config entry option defining number of seconds from last seen to away."""
+        return timedelta(DEFAULT_DETECTION_TIME)
 
     async def _async_update_data(self) -> None:
         """Update Linksys devices information."""
