@@ -4,7 +4,11 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any
 
+from homeassistant.util import slugify
 import homeassistant.util.dt as dt_util
+
+from .const import ATTR_DEVICE_TRACKER
+
 
 class Device:
     """Represents a network device."""
@@ -14,7 +18,8 @@ class Device:
         """Initialize the network device."""
         self._mac = mac
         self._params = params
-        self._last_seen: datetime | None = None   
+        self._last_seen: datetime | None = None
+        self._attrs: dict[str, Any] = {}
 
     @property
     def name(self) -> str | None:
@@ -46,6 +51,14 @@ class Device:
     def last_seen(self) -> datetime | None:
         """Return device last seen."""
         return self._last_seen
+
+    @property
+    def attrs(self) -> dict[str, Any]:
+        """Return device attributes."""
+        for attr in ATTR_DEVICE_TRACKER:
+            if attr in self._params:
+                self._attrs[slugify(attr)] = self._params[attr]
+        return self._attrs
 
     def update(
         self,

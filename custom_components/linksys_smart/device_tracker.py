@@ -111,3 +111,8 @@ class LinksysDataUpdateCoordinatorTracker(
     def ip_address(self) -> str | None:
         """Return the mac address of the client."""
         return self.device.ip_address
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any] | None:
+        """Return the device state attributes."""
+        return self.device.attrs if self.is_connected else None
