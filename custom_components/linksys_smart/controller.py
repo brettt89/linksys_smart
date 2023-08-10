@@ -23,6 +23,9 @@ class LinksysError(Exception):
 class AuthError(LinksysError):
     """Exception if auth error occurs."""
 
+class UnkownActionError(LinksysError):
+    """Exception if unknown action error occurs."""
+
 class LinksysController:
     """Manages a single Linksys Smart Wifi Network instance."""
 
@@ -39,7 +42,7 @@ class LinksysController:
     async def async_initialize(self):
         """Load Linksys Smart Wifi parameters."""
         host = self._config.get("host")
-        self.url = f"http://{host}/{LINKSYS_JNAP_ENDPOINT}"
+        self.url = f"http://{host}{LINKSYS_JNAP_ENDPOINT}"
 
         username = self._config.get("username")
         password = self._config.get("password")
@@ -110,7 +113,7 @@ class LinksysController:
         ]
 
         try:
-            async with self.session.request("post", self.url, headers=self.headers, json=json, timeout=10) as res:
+            async with self._session.request("post", self.url, headers=self.headers, json=json, timeout=10) as res:
                 _LOGGER.debug(
                     "received (from %s) %s %s %s",
                     self.url,
@@ -140,9 +143,11 @@ def _raise_on_error(data: dict[str, Any] | None) -> None:
 
     if data["result"] != "OK":
         # Error
+        if data["result"] == "_ErrorUnknownAction":
+            raise UnkownActionError()
         response = data["responses"][0]
         if response["result"] == "_ErrorUnauthorized":
-            raise AuthError("Invalid authorization credentials.")
+            raise AuthError()
         if "error" in response:
             raise LinksysError(response["error"])
             

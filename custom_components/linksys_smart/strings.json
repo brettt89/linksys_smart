@@ -1,0 +1,30 @@
+{
+    "config": {
+      "step": {
+        "user": {
+          "title": "Set up Linksys Router",
+          "data": {
+            "name": "Linksys",
+            "host": "Host",
+            "username": "Username",
+            "password": "Password"
+          }
+        },
+        "reauth_confirm": {
+          "description": "The password for {username} is invalid.",
+          "title": "Re-authenticate with Linksys Router",
+          "data": {
+            "password": "Password"
+          }
+        }
+      },
+      "error": {
+        "cannot_connect": "Unable to connect to router.",
+        "invalid_auth": "Invalid credentials provided."
+      },
+      "abort": {
+        "already_configured": "Linksys router is already configured.",
+        "reauth_successful": "Authentication successful."
+      }
+    }
+  }

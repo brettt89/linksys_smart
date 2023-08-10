@@ -20,7 +20,7 @@ from .const import (
     DEFAULT_NAME,
     DOMAIN,
 )
-from .controller import LinksysController, LinksysError, AuthError
+from .controller import LinksysController, LinksysError, AuthError, UnkownActionError
 
 class MikrotikFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle a Mikrotik config flow."""
@@ -40,11 +40,11 @@ class MikrotikFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                 controller = LinksysController(async_get_clientsession(self.hass), MappingProxyType(user_input))
                 await controller.async_initialize()
                 await controller.async_check_admin_password()
-            except LinksysError:
-                errors["base"] = "cannot_connect"
             except AuthError:
                 errors[CONF_USERNAME] = "invalid_auth"
                 errors[CONF_PASSWORD] = "invalid_auth"
+            except (LinksysError):
+                errors["base"] = "cannot_connect"
 
             if not errors:
                 return self.async_create_entry(
