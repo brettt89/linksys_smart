@@ -19,9 +19,9 @@ PLATFORMS = [Platform.DEVICE_TRACKER]
 async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
     """Set up the Linksys component."""
     session = async_get_clientsession(hass)
-    config = MappingProxyType(config_entry)
+    config = MappingProxyType(config_entry.data)
     api = LinksysController(session, config)
-    api.async_initialize()
+    await api.async_initialize()
     coordinator = LinksysDataUpdateCoordinator(hass, config_entry, api)
 
     await coordinator.api.async_get_linksys_details()

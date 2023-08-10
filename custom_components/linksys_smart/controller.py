@@ -11,7 +11,7 @@ from typing import Any
 
 _LOGGER = logging.getLogger(__name__)
 
-LINKSYS_JNAP_ENDPOINT: str = "/JNAP"
+LINKSYS_JNAP_ENDPOINT: str = "/JNAP/"
 LINKSYS_JNAP_ACTION_URL: str = "http://linksys.com/jnap"
 LINKSYS_JNAP_ACTION_HEADER = "X-JNAP-Action"
 LINKSYS_JNAP_AUTHORIZATION_HEADER = "X-JNAP-Authorization"
@@ -113,6 +113,13 @@ class LinksysController:
         ]
 
         try:
+            _LOGGER.debug(
+                "sending (to %s) %s %s %s",
+                self.url,
+                "post",
+                self.headers,
+                json,
+            )
             async with self._session.request("post", self.url, headers=self.headers, json=json, timeout=10) as res:
                 _LOGGER.debug(
                     "received (from %s) %s %s %s",
